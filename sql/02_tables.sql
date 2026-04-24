@@ -20,6 +20,11 @@
 19. Pet_health_record
 20. Booking_room_pet
 21. Service_product_standard
+22. Goods_receipt
+23. Goods_receipt_detail
+24. Stock_audit
+25. Stock_audit_detail
+26. Materrial_waste
 */
 -- =========================================================
 -- 1. CUSTOMER
@@ -418,4 +423,105 @@ CREATE TABLE service_product_standard (
     CONSTRAINT ck_sps_usage_amount CHECK (usage_amount > 0),
     CONSTRAINT ck_sps_usage_unit CHECK (usage_unit IN ('ML','L','G','KG')),-- nhớ có function chỗ này
     CONSTRAINT ck_sps_species CHECK (species IN ('DOG','CAT'))
+);
+-- =========================================================
+-- 22. GOODS_RECEIPT
+-- =========================================================
+CREATE TABLE goods_receipt (
+    goods_receipt_id   VARCHAR2(10) NOT NULL,
+    branch_id          VARCHAR2(10) NOT NULL,
+    employee_id        VARCHAR2(10) NOT NULL,
+    supplier_name      NVARCHAR2(120),
+    receipt_date       TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    total_quantity     NUMBER(12,2) DEFAULT 0 NOT NULL,
+    total_item_count   NUMBER(10) DEFAULT 0 NOT NULL,
+    status             NVARCHAR2(20) NOT NULL,
+    note               CLOB,
+    created_at         TIMESTAMP(6) WITH TIME ZONE,
+    CONSTRAINT pk_goods_receipt PRIMARY KEY (goods_receipt_id),
+    CONSTRAINT fk_gr_branch FOREIGN KEY (branch_id) REFERENCES branch(branch_id),
+    CONSTRAINT fk_gr_employee FOREIGN KEY (employee_id) REFERENCES employee(employee_id),
+    CONSTRAINT ck_gr_total_quantity CHECK (total_quantity >= 0),
+    CONSTRAINT ck_gr_total_item_count CHECK (total_item_count >= 0),
+    CONSTRAINT ck_gr_status CHECK (status IN ('DRAFT', 'APPROVED', 'CANCELLED'))
+);
+-- =========================================================
+-- 23. GOODS_RECEIPT_DETAIL
+-- =========================================================
+CREATE TABLE goods_receipt_detail (
+    goods_receipt_detail_id   VARCHAR2(10) NOT NULL,
+    goods_receipt_id          VARCHAR2(10) NOT NULL,
+    product_id                VARCHAR2(10) NOT NULL,
+    quantity                  NUMBER(12,2) NOT NULL,
+    unit                      VARCHAR2(20) NOT NULL,
+    line_total                NUMBER(12,2) DEFAULT 0 NOT NULL,
+    note                      CLOB,
+    created_at                TIMESTAMP(6) WITH TIME ZONE,
+    CONSTRAINT pk_goods_receipt_detail PRIMARY KEY (goods_receipt_detail_id),
+    CONSTRAINT fk_grd_receipt FOREIGN KEY (goods_receipt_id) REFERENCES goods_receipt(goods_receipt_id),
+    CONSTRAINT fk_grd_product FOREIGN KEY (product_id) REFERENCES product(product_id),
+    CONSTRAINT uq_grd_receipt_product UNIQUE (goods_receipt_id, product_id),
+    CONSTRAINT ck_grd_quantity CHECK (quantity > 0),
+    CONSTRAINT ck_grd_line_total CHECK (line_total >= 0),
+    CONSTRAINT ck_grd_unit CHECK (UPPER(unit) IN ('G', 'KG', 'ML', 'L'))
+);
+-- =========================================================
+-- 24. STOCK_AUDIT
+-- =========================================================
+CREATE TABLE stock_audit (
+    stock_audit_id    VARCHAR2(10) NOT NULL,
+    branch_id         VARCHAR2(10) NOT NULL,
+    employee_id       VARCHAR2(10) NOT NULL,
+    audit_date        TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    status            NVARCHAR2(20) NOT NULL,
+    note              CLOB,
+    created_at        TIMESTAMP(6) WITH TIME ZONE,
+    updated_at        TIMESTAMP(6) WITH TIME ZONE,
+    CONSTRAINT pk_stock_audit PRIMARY KEY (stock_audit_id),
+    CONSTRAINT fk_sa_branchFOREIGN KEY (branch_id) REFERENCES branch(branch_id),
+    CONSTRAINT fk_sa_employee FOREIGN KEY (employee_id) REFERENCES employee(employee_id),
+    CONSTRAINT ck_sa_status CHECK (status IN ('DRAFT', 'COMPLETED', 'CANCELLED'))
+-- =========================================================
+-- 25. STOCK_AUDIT_DETAIL
+-- =========================================================
+CREATE TABLE stock_audit_detail (
+    stock_audit_detail_id   VARCHAR2(10) NOT NULL,
+    stock_audit_id          VARCHAR2(10) NOT NULL,
+    product_id              VARCHAR2(10) NOT NULL,
+    system_quantity         NUMBER(12,2) DEFAULT 0 NOT NULL,
+    actual_quantity         NUMBER(12,2) DEFAULT 0 NOT NULL,
+    difference_quantity     NUMBER(12,2),
+    difference_rate         NUMBER(5,2),
+    note                    CLOB,
+    created_at              TIMESTAMP(6) WITH TIME ZONE,
+    updated_at              TIMESTAMP(6) WITH TIME ZONE,
+    CONSTRAINT pk_stock_audit_detail PRIMARY KEY (stock_audit_detail_id),
+    CONSTRAINT fk_sad_audit FOREIGN KEY (stock_audit_id) REFERENCES stock_audit(stock_audit_id),
+    CONSTRAINT fk_sad_product FOREIGN KEY (product_id) REFERENCES product(product_id),
+    CONSTRAINT uq_sad_audit_product UNIQUE (stock_audit_id, product_id),
+    CONSTRAINT ck_sad_system_quantity CHECK (system_quantity >= 0),
+    CONSTRAINT ck_sad_actual_quantity CHECK (actual_quantity >= 0),
+    CONSTRAINT ck_sad_difference_rate CHECK (difference_rate IS NULL OR difference_rate >= 0)
+);
+-- =========================================================
+-- 26. MATERIAL_WASTE
+-- =========================================================
+CREATE TABLE material_waste (
+    material_waste_id   VARCHAR2(10) NOT NULL,
+    product_id          VARCHAR2(10) NOT NULL,
+    employee_id         VARCHAR2(10) NOT NULL,
+    branch_id           VARCHAR2(10) NOT NULL,
+    waste_quantity      NUMBER(12,2) NOT NULL,
+    reason              CLOB,
+    recorded_at         TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    status              NVARCHAR2(20) NOT NULL,
+    note                CLOB,
+    created_at          TIMESTAMP(6) WITH TIME ZONE,
+    updated_at          TIMESTAMP(6) WITH TIME ZONE,
+    CONSTRAINT pk_material_waste PRIMARY KEY (material_waste_id),
+    CONSTRAINT fk_mw_product FOREIGN KEY (product_id) REFERENCES product(product_id),
+    CONSTRAINT fk_mw_employee FOREIGN KEY (employee_id) REFERENCES employee(employee_id),
+    CONSTRAINT fk_mw_branch FOREIGN KEY (branch_id) REFERENCES branch(branch_id),
+    CONSTRAINT ck_mw_waste_quantity CHECK (waste_quantity > 0),
+    CONSTRAINT ck_mw_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED'))
 );
