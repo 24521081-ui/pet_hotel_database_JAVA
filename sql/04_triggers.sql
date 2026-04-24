@@ -1,6 +1,7 @@
 -- =========================================================
 -- MENU
 -- =========================================================
+
 -- III. TRIGGER
 --   1. booking_room_no_overlap                  -- Trigger chống trùng lịch đặt phòng
 --   2. employee_no_overlap                      -- Trigger ngăn nhân viên bị trùng lịch thực hiện dịch vụ
